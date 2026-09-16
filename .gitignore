@@ -1,0 +1,28 @@
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Python environments and generated files
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local datasets, logs, indexes, and trained models
+data/
+models/
+*.zip
+*.tar.gz
+*.log
+
+# Local editor and agent configuration
+.idea/
+.vscode/
+.agents/
+.codex/
