@@ -12,3 +12,11 @@ pandas==2.2.2
 pytest==8.3.2
 black==24.8.0
 flake8==7.1.1
+
+# Intent parsing and log retrieval
+openai
+ollama
+chromadb
+sentence-transformers
+langchain-community
+langchain-text-splitters
