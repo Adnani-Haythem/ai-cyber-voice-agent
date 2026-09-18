@@ -20,3 +20,8 @@ chromadb
 sentence-transformers
 langchain-community
 langchain-text-splitters
+
+# Fraud detection
+joblib
+scikit-learn
+xgboost
