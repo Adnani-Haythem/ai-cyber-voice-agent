@@ -1,0 +1,11 @@
+step
+amount
+oldbalanceOrg
+newbalanceOrig
+oldbalanceDest
+newbalanceDest
+balance_change_org
+balance_change_dest
+amount_ratio_org
+amount_ratio_dest
+type_encoded

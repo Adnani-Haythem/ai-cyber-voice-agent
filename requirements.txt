@@ -23,5 +23,6 @@ langchain-text-splitters
 
 # Fraud detection
 joblib
-scikit-learn
+# The recovered calibrated artifacts were created with scikit-learn 1.6.1.
+scikit-learn==1.6.1
 xgboost

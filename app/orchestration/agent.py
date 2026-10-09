@@ -16,7 +16,7 @@ class SecurityAgent:
         self.history = []
         self.pending_approvals = []
 
-    def process(self, transcript: str) -> str:
+    def process(self, transcript: str, approval=None) -> str:
         """Main processing pipeline"""
         print(f"🤖 Processing: {transcript}")
 
@@ -29,9 +29,15 @@ class SecurityAgent:
         print(f"🎯 Intent: {json.dumps(intent, indent=2)}")
 
         # Step 3: Check if approval needed
-        if intent.get("requires_approval", False):
+        high_risk_actions = {"ISOLATE_HOST", "BLOCK_IP"}
+        requires_approval = (
+            intent.get("requires_approval", False)
+            or intent.get("action") in high_risk_actions
+        )
+        if requires_approval:
             print(f"🔐 Approval required for: {intent['action']}")
-            approval = self._request_approval(intent)
+            if approval is None:
+                return self._approval_request(intent)
             if not approval:
                 return "⛔ Action cancelled. Approval denied."
 
@@ -52,22 +58,14 @@ class SecurityAgent:
 
         return response
 
-    def _request_approval(self, intent: Dict) -> bool:
-        """Request approval for high-risk actions"""
+    def _approval_request(self, intent: Dict) -> str:
+        """Return a browser-facing approval request without blocking the server."""
         action = intent.get("action", "unknown")
         params = intent.get("parameters", {})
-
-        print("\n" + "="*50)
-        print(f"🔐 APPROVAL REQUIRED")
-        print(f"Action: {action}")
-        print(f"Parameters: {json.dumps(params, indent=2)}")
-        print("="*50)
-
-        # In production, this would send a notification
-        # For demo, we'll ask via terminal
-        response = input("Approve this action? (yes/no): ").strip().lower()
-
-        return response in ["yes", "y", "approve"]
+        return (
+            f"Approval required before {action} for "
+            f"{params.get('ip', 'the requested target')}."
+        )
 
     def _generate_response(self, intent: Dict, result: Dict) -> str:
         """Generate natural language response"""
@@ -75,7 +73,10 @@ class SecurityAgent:
 
         if action == "QUERY_LOGS":
             data = result.get("data", [])
-            return f"Found {len(data)} relevant log entries."
+            if not data:
+                return "Found 0 relevant log entries."
+            lines = "\n".join(f"- {line}" for line in data)
+            return f"Found {len(data)} relevant log entries:\n{lines}"
         elif action == "ISOLATE_HOST":
             return f"⚠️ Host {intent.get('parameters', {}).get('ip', 'unknown')} ISOLATED. Action logged."
         elif action == "BLOCK_IP":

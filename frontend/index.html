@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#08100b">
+    <title>AI Cybersecurity Voice Agent</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #050b08;
+            --panel: rgba(8, 19, 13, 0.86);
+            --panel-border: rgba(94, 255, 149, 0.18);
+            --panel-soft: rgba(12, 28, 19, 0.92);
+            --text: #e4ffe8;
+            --muted: #86a791;
+            --accent: #61ff9a;
+            --accent-2: #14d86f;
+            --danger: #ff5d78;
+            --warn: #ffcc66;
+            --shadow: 0 24px 80px rgba(0, 0, 0, 0.48);
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body { min-height: 100%; }
+
+        body {
+            margin: 0;
+            font-family: "Space Grotesk", sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(97, 255, 154, 0.16), transparent 26%),
+                radial-gradient(circle at 80% 10%, rgba(20, 216, 111, 0.12), transparent 20%),
+                linear-gradient(160deg, #030705 0%, #06110b 48%, #091710 100%);
+            color: var(--text);
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(97, 255, 154, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(97, 255, 154, 0.04) 1px, transparent 1px);
+            background-size: 48px 48px;
+            mask-image: radial-gradient(circle at center, black 38%, transparent 100%);
+        }
+
+        .shell {
+            width: min(1180px, calc(100vw - 32px));
+            min-height: calc(100vh - 32px);
+            margin: 16px auto;
+            padding: 24px;
+            border: 1px solid var(--panel-border);
+            border-radius: 28px;
+            background: var(--panel);
+            backdrop-filter: blur(18px);
+            box-shadow: var(--shadow);
+            display: grid;
+            grid-template-columns: 1.8fr 0.9fr;
+            gap: 20px;
+        }
+
+        .hero {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+            margin-bottom: 18px;
+        }
+
+        .title-block h1 {
+            margin: 0;
+            font-size: clamp(1.8rem, 4vw, 3rem);
+            letter-spacing: -0.05em;
+            line-height: 0.95;
+        }
+
+        .title-block p {
+            margin: 10px 0 0;
+            color: var(--muted);
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 0.9rem;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .status-pill,
+        .metric {
+            border: 1px solid rgba(97, 255, 154, 0.14);
+            background: rgba(5, 14, 10, 0.6);
+            border-radius: 18px;
+            padding: 12px 14px;
+        }
+
+        .status-pill { min-width: 160px; }
+
+        .status-label {
+            display: block;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: var(--muted);
+            margin-bottom: 7px;
+        }
+
+        .status-value {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 0.82rem;
+        }
+
+        .indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: var(--warn);
+            box-shadow: 0 0 12px rgba(255, 204, 102, 0.35);
+        }
+
+        .indicator.online {
+            background: var(--accent);
+            box-shadow: 0 0 12px rgba(97, 255, 154, 0.45);
+        }
+
+        .indicator.offline {
+            background: var(--danger);
+            box-shadow: 0 0 12px rgba(255, 93, 120, 0.4);
+        }
+
+        .workspace {
+            flex: 1;
+            min-height: 0;
+            display: grid;
+            grid-template-rows: 1fr auto;
+            gap: 14px;
+        }
+
+        .chat-panel {
+            min-height: 0;
+            border: 1px solid rgba(97, 255, 154, 0.12);
+            border-radius: 24px;
+            background: linear-gradient(180deg, rgba(6, 18, 12, 0.72), rgba(4, 11, 8, 0.92));
+            padding: 18px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .chat-head h2 {
+            margin: 0;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--muted);
+        }
+
+        .chat-head .hint {
+            color: var(--muted);
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 0.78rem;
+        }
+
+        .chat-area {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding-right: 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            scrollbar-color: rgba(97, 255, 154, 0.35) transparent;
+        }
+
+        .message {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-width: 88%;
+            animation: rise 180ms ease-out;
+        }
+
+        @keyframes rise {
+            from { transform: translateY(8px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .message.user {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+
+        .message.assistant,
+        .message.system {
+            align-self: flex-start;
+        }
+
+        .bubble {
+            padding: 14px 16px;
+            border-radius: 18px;
+            white-space: pre-wrap;
+            line-height: 1.55;
+            border: 1px solid transparent;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.16);
+        }
+
+        .message.user .bubble {
+            background: linear-gradient(135deg, rgba(20, 216, 111, 0.28), rgba(97, 255, 154, 0.12));
+            border-color: rgba(97, 255, 154, 0.28);
+            color: #effff2;
+        }
+
+        .message.assistant .bubble {
+            background: rgba(9, 21, 15, 0.94);
+            border-color: rgba(97, 255, 154, 0.12);
+            color: var(--text);
+        }
+
+        .message.system .bubble {
+            background: rgba(4, 14, 9, 0.8);
+            border-color: rgba(255, 204, 102, 0.18);
+            color: #f1f6ef;
+        }
+
+        .meta {
+            color: var(--muted);
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 0.72rem;
+        }
+
+        .composer {
+            display: grid;
+            grid-template-columns: 1fr auto auto auto;
+            gap: 10px;
+            align-items: center;
+            padding: 14px;
+            border-radius: 22px;
+            background: var(--panel-soft);
+            border: 1px solid rgba(97, 255, 154, 0.12);
+        }
+
+        .composer input {
+            width: 100%;
+            min-width: 0;
+            border: 1px solid rgba(97, 255, 154, 0.16);
+            background: rgba(3, 9, 6, 0.9);
+            color: var(--text);
+            border-radius: 16px;
+            padding: 14px 16px;
+            outline: none;
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 0.95rem;
+        }
+
+        .composer input::placeholder { color: #5f7f68; }
+
+        .composer input:focus {
+            border-color: rgba(97, 255, 154, 0.46);
+            box-shadow: 0 0 0 4px rgba(97, 255, 154, 0.08);
+        }
+
+        .button {
+            border: 1px solid rgba(97, 255, 154, 0.2);
+            background: linear-gradient(180deg, rgba(18, 40, 27, 0.95), rgba(8, 18, 12, 0.95));
+            color: var(--text);
+            border-radius: 16px;
+            padding: 13px 16px;
+            font-family: "Space Grotesk", sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 120ms ease, border-color 120ms ease, background 120ms ease, opacity 120ms ease;
+        }
+
+        .button:hover {
+            transform: translateY(-1px);
+            border-color: rgba(97, 255, 154, 0.42);
+        }
+
+        .button:active { transform: translateY(0); }
+
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .button.primary {
+            background: linear-gradient(135deg, rgba(20, 216, 111, 0.9), rgba(97, 255, 154, 0.5));
+            color: #041109;
+            border-color: rgba(97, 255, 154, 0.52);
+        }
+
+        .button.voice {
+            min-width: 54px;
+            font-size: 1rem;
+        }
+
+        .button.voice.recording {
+            background: linear-gradient(135deg, rgba(255, 93, 120, 0.9), rgba(255, 151, 163, 0.5));
+            color: #22060b;
+            border-color: rgba(255, 93, 120, 0.72);
+            animation: pulse 1.1s infinite;
+        }
+
+        .button.subtle {
+            color: var(--muted);
+            background: rgba(5, 12, 8, 0.88);
+        }
+
+        .approval-controls {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 93, 120, 0.35); }
+            70% { box-shadow: 0 0 0 14px rgba(255, 93, 120, 0); }
+        }
+
+        .sidebar {
+            display: grid;
+            grid-template-rows: auto auto 1fr;
+            gap: 14px;
+            min-height: 0;
+        }
+
+        .panel {
+            border-radius: 24px;
+            border: 1px solid rgba(97, 255, 154, 0.12);
+            background: linear-gradient(180deg, rgba(6, 16, 11, 0.9), rgba(4, 10, 7, 0.92));
+            padding: 16px;
+        }
+
+        .panel h3 {
+            margin: 0 0 10px;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            color: var(--muted);
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .metric strong {
+            display: block;
+            font-size: 1.2rem;
+            line-height: 1;
+        }
+
+        .metric span {
+            display: block;
+            margin-top: 5px;
+            color: var(--muted);
+            font-size: 0.78rem;
+            font-family: "IBM Plex Mono", monospace;
+        }
+
+        .log-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 100%;
+            overflow-y: auto;
+        }
+
+        .log-list li {
+            padding: 12px 12px 12px 14px;
+            border-radius: 16px;
+            background: rgba(6, 17, 11, 0.72);
+            border: 1px solid rgba(97, 255, 154, 0.1);
+            color: #dcf9e1;
+            font-size: 0.92rem;
+            line-height: 1.45;
+        }
+
+        .log-list .muted {
+            color: var(--muted);
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 0.76rem;
+            margin-top: 6px;
+        }
+
+        .loading-row {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(97, 255, 154, 0.22);
+            border-top-color: var(--accent);
+            border-radius: 999px;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 1024px) {
+            .shell { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 720px) {
+            .shell {
+                width: min(100vw - 18px, 100%);
+                margin: 9px auto;
+                padding: 16px;
+                border-radius: 22px;
+            }
+
+            .topbar { flex-direction: column; }
+
+            .status-grid {
+                width: 100%;
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .composer { grid-template-columns: 1fr 1fr; }
+
+            .composer input { grid-column: 1 / -1; }
+            .composer .send { grid-column: 1 / 2; }
+            .composer .voice { grid-column: 2 / 3; }
+            .composer .clear { grid-column: 1 / -1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <main class="hero">
+            <div class="topbar">
+                <div class="title-block">
+                    <h1>AI Cybersecurity Voice Agent</h1>
+                    <p>Green-room console for voice-driven security triage, enrichment, and response.</p>
+                </div>
+                <div class="status-grid">
+                    <div class="status-pill">
+                        <span class="status-label">ASR</span>
+                        <div class="status-value"><span class="indicator" id="asrIndicator"></span><span id="asrStatus">Checking</span></div>
+                    </div>
+                    <div class="status-pill">
+                        <span class="status-label">TTS</span>
+                        <div class="status-value"><span class="indicator" id="ttsIndicator"></span><span id="ttsStatus">Checking</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <section class="workspace">
+                <div class="chat-panel">
+                    <div class="chat-head">
+                        <h2>Conversation</h2>
+                        <div class="hint" id="connectionHint">Waiting for health check</div>
+                    </div>
+                    <div class="chat-area" id="chatArea"></div>
+                </div>
+
+                <div class="composer">
+                    <input id="commandInput" type="text" placeholder="Type a command, then press Enter..." autocomplete="off">
+                    <button class="button primary send" id="sendBtn">Send</button>
+                    <button class="button voice" id="voiceBtn" title="Record voice command">🎤</button>
+                    <button class="button subtle clear" id="clearBtn">Clear chat</button>
+                </div>
+            </section>
+        </main>
+
+        <aside class="sidebar">
+            <section class="panel">
+                <h3>System Stats</h3>
+                <div class="metrics">
+                    <div class="metric">
+                        <strong id="historyCount">0</strong>
+                        <span>History entries</span>
+                    </div>
+                    <div class="metric">
+                        <strong id="latencyValue">--</strong>
+                        <span>Latest check</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel" style="display:flex; flex-direction:column; min-height:0;">
+                <h3>Quick Commands</h3>
+                <ul class="log-list" id="quickList">
+                    <li>Show me failed logins<div class="muted">Inspect brute-force activity</div></li>
+                    <li>Summarize activity<div class="muted">Return the current log summary</div></li>
+                    <li>Enrich IP 87.194.216.51<div class="muted">Pull IP intelligence</div></li>
+                    <li>Isolate host 192.168.1.100<div class="muted">Draft a containment action</div></li>
+                </ul>
+            </section>
+
+            <section class="panel" style="display:flex; flex-direction:column; min-height:0;">
+                <h3>Recent History</h3>
+                <ul class="log-list" id="historyList"></ul>
+            </section>
+        </aside>
+    </div>
+
+    <!-- Live alerts container (SSE) -->
+    <div id="alerts" style="position:fixed;right:16px;top:16px;max-width:360px;z-index:9999"></div>
+
+    <script>
+        const chatArea = document.getElementById('chatArea');
+        const historyList = document.getElementById('historyList');
+        const commandInput = document.getElementById('commandInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const voiceBtn = document.getElementById('voiceBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const asrIndicator = document.getElementById('asrIndicator');
+        const ttsIndicator = document.getElementById('ttsIndicator');
+        const asrStatus = document.getElementById('asrStatus');
+        const ttsStatus = document.getElementById('ttsStatus');
+        const connectionHint = document.getElementById('connectionHint');
+        const historyCount = document.getElementById('historyCount');
+        const latencyValue = document.getElementById('latencyValue');
+
+        let isRecording = false;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let healthTimer = null;
+        let recordingTimer = null;
+
+        function timestampLabel() {
+            return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        function appendMessage(role, text, meta = '') {
+            const item = document.createElement('div');
+            item.className = `message ${role}`;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.textContent = text;
+
+            const metaNode = document.createElement('div');
+            metaNode.className = 'meta';
+            metaNode.textContent = meta || timestampLabel();
+
+            item.appendChild(bubble);
+            item.appendChild(metaNode);
+            chatArea.appendChild(item);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function appendLoading() {
+            const item = document.createElement('div');
+            item.className = 'message assistant';
+            item.id = 'loadingMessage';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.innerHTML = '<span class="loading-row"><span class="spinner"></span><span>Processing command...</span></span>';
+
+            const metaNode = document.createElement('div');
+            metaNode.className = 'meta';
+            metaNode.textContent = 'live';
+
+            item.appendChild(bubble);
+            item.appendChild(metaNode);
+            chatArea.appendChild(item);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function appendApprovalRequest(message, command) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'message assistant approval-request';
+            wrapper.innerHTML = `<div>${message}</div>`;
+
+            const approveButton = document.createElement('button');
+            approveButton.className = 'button';
+            approveButton.textContent = 'Approve';
+            approveButton.addEventListener('click', () => resolveApproval(command, true, wrapper));
+
+            const denyButton = document.createElement('button');
+            denyButton.className = 'button';
+            denyButton.textContent = 'Deny';
+            denyButton.addEventListener('click', () => resolveApproval(command, false, wrapper));
+
+            const controls = document.createElement('div');
+            controls.className = 'approval-controls';
+            controls.append(approveButton, denyButton);
+            wrapper.appendChild(controls);
+            chatArea.appendChild(wrapper);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        async function resolveApproval(command, approved, wrapper) {
+            wrapper.querySelectorAll('button').forEach((button) => { button.disabled = true; });
+            try {
+                const response = await fetch('/api/text', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command, approval: approved }),
+                });
+                const data = await response.json();
+                appendMessage('assistant', data.response || 'Unable to resolve approval.', 'api');
+                await fetchHealth();
+                await fetchHistory();
+            } catch (error) {
+                appendMessage('assistant', `Network error: ${error.message}`, 'api');
+            }
+        }
+
+        function removeLoading() {
+            const loading = document.getElementById('loadingMessage');
+            if (loading) {
+                loading.remove();
+            }
+        }
+
+        function setBusy(isBusy) {
+            sendBtn.disabled = isBusy;
+            clearBtn.disabled = isBusy;
+            commandInput.disabled = isBusy;
+            voiceBtn.disabled = isBusy && !isRecording;
+        }
+
+        function setIndicators(asrReady, ttsReady, label) {
+            asrIndicator.className = `indicator ${asrReady ? 'online' : 'offline'}`;
+            ttsIndicator.className = `indicator ${ttsReady ? 'online' : 'offline'}`;
+            asrStatus.textContent = asrReady ? 'Ready' : 'Unavailable';
+            ttsStatus.textContent = ttsReady ? 'Ready' : 'Unavailable';
+            connectionHint.textContent = label;
+        }
+
+        function clearChat() {
+            chatArea.innerHTML = '';
+            appendMessage(
+                'system',
+                'Console cleared. Try a command like "Show me failed logins" or use the voice button.',
+                'system'
+            );
+        }
+
+        function renderHistory(items) {
+            historyList.innerHTML = '';
+
+            if (!items.length) {
+                const empty = document.createElement('li');
+                empty.textContent = 'No history yet.';
+                historyList.appendChild(empty);
+                return;
+            }
+
+            items.slice().reverse().forEach((item) => {
+                const entry = document.createElement('li');
+                entry.textContent = item.command || item.transcript || 'Command';
+
+                const meta = document.createElement('div');
+                meta.className = 'muted';
+                meta.textContent = `${item.type} • ${item.timestamp}`;
+
+                entry.appendChild(meta);
+                historyList.appendChild(entry);
+            });
+        }
+
+        async function fetchHealth() {
+            const started = performance.now();
+            try {
+                const response = await fetch('/api/health', { cache: 'no-store' });
+                const data = await response.json();
+                const latency = Math.round(performance.now() - started);
+                latencyValue.textContent = `${latency} ms`;
+                historyCount.textContent = String(data.history_count ?? 0);
+
+                setIndicators(
+                    Boolean(data.asr_available),
+                    Boolean(data.tts_available),
+                    `Connected · ${data.asr_backend || 'asr'} / ${data.tts_backend || 'tts'}`
+                );
+
+                return data;
+            } catch (error) {
+                latencyValue.textContent = '--';
+                setIndicators(false, false, 'Offline');
+                return null;
+            }
+        }
+
+        async function fetchHistory() {
+            try {
+                const response = await fetch('/api/history?limit=8', { cache: 'no-store' });
+                const data = await response.json();
+                renderHistory(data.history || []);
+            } catch (error) {
+                historyList.innerHTML = '<li>Unable to load history.</li>';
+            }
+        }
+
+        async function sendText() {
+            const command = commandInput.value.trim();
+            if (!command) {
+                return;
+            }
+
+            appendMessage('user', command, 'text');
+            commandInput.value = '';
+            appendLoading();
+            setBusy(true);
+
+            try {
+                const response = await fetch('/api/text', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command }),
+                });
+                const data = await response.json();
+                removeLoading();
+
+                if (!response.ok || data.status !== 'success') {
+                    appendMessage('assistant', `Error: ${data.error || 'Unable to process command'}`, 'api');
+                    return;
+                }
+
+                if (data.approval_required) {
+                    appendApprovalRequest(data.response, command);
+                } else {
+                    appendMessage('assistant', data.response, 'api');
+                }
+                await fetchHealth();
+                await fetchHistory();
+            } catch (error) {
+                removeLoading();
+                appendMessage('assistant', `Network error: ${error.message}`, 'api');
+            } finally {
+                setBusy(false);
+            }
+        }
+
+        function pickMimeType() {
+            const candidates = [
+                'audio/webm;codecs=opus',
+                'audio/webm',
+                'audio/ogg;codecs=opus',
+                'audio/ogg',
+            ];
+
+            if (typeof MediaRecorder === 'undefined') {
+                return '';
+            }
+
+            return candidates.find((candidate) => MediaRecorder.isTypeSupported(candidate)) || '';
+        }
+
+        async function startRecording() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                appendMessage('assistant', 'Microphone access is not supported in this browser.', 'api');
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                recordedChunks = [];
+                const options = {};
+                const mimeType = pickMimeType();
+                if (mimeType) {
+                    options.mimeType = mimeType;
+                }
+
+                mediaRecorder = new MediaRecorder(stream, options);
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data && event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const mime = mediaRecorder.mimeType || 'audio/webm';
+                    const blob = new Blob(recordedChunks, { type: mime });
+                    const fileName = mime.includes('ogg') ? 'command.ogg' : 'command.webm';
+                    const formData = new FormData();
+                    formData.append('audio', blob, fileName);
+
+                    stream.getTracks().forEach((track) => track.stop());
+                    isRecording = false;
+                    voiceBtn.classList.remove('recording');
+                    voiceBtn.textContent = '🎤';
+                    clearTimeout(recordingTimer);
+                    appendLoading();
+                    setBusy(true);
+
+                    try {
+                        const response = await fetch('/api/voice', {
+                            method: 'POST',
+                            body: formData,
+                        });
+                        const data = await response.json();
+                        removeLoading();
+
+                        if (!response.ok || data.status !== 'success') {
+                            appendMessage('assistant', `Error: ${data.error || 'Unable to process voice command'}`, 'api');
+                            return;
+                        }
+
+                        appendMessage('assistant', `Heard: ${data.transcript}`, 'voice');
+                        if (data.approval_required) {
+                            appendApprovalRequest(data.response, data.transcript);
+                        } else {
+                            appendMessage('assistant', data.response, 'api');
+                        }
+                        await fetchHealth();
+                        await fetchHistory();
+                    } catch (error) {
+                        removeLoading();
+                        appendMessage('assistant', `Network error: ${error.message}`, 'api');
+                    } finally {
+                        setBusy(false);
+                    }
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                voiceBtn.classList.add('recording');
+                voiceBtn.textContent = '⏹';
+                setBusy(true);
+                setIndicators(true, true, 'Recording voice command');
+
+                recordingTimer = window.setTimeout(() => {
+                    if (isRecording && mediaRecorder && mediaRecorder.state !== 'inactive') {
+                        mediaRecorder.stop();
+                    }
+                }, 8000);
+            } catch (error) {
+                appendMessage('assistant', `Microphone error: ${error.message}`, 'api');
+                isRecording = false;
+                voiceBtn.classList.remove('recording');
+                voiceBtn.textContent = '🎤';
+                setBusy(false);
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && isRecording && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+        }
+
+        async function toggleRecording() {
+            if (isRecording) {
+                stopRecording();
+                return;
+            }
+
+            await startRecording();
+        }
+
+        sendBtn.addEventListener('click', sendText);
+        voiceBtn.addEventListener('click', toggleRecording);
+        clearBtn.addEventListener('click', clearChat);
+        commandInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                sendText();
+            }
+        });
+
+        appendMessage(
+            'system',
+            'Welcome to the AI cybersecurity console. Type a command, record a voice prompt, or use one of the quick actions on the right.',
+            'system'
+        );
+
+        fetchHealth().then(() => fetchHistory());
+        healthTimer = window.setInterval(fetchHealth, 10000);
+
+        // SSE: receive live alerts
+        try{
+            const es = new EventSource('/stream');
+            es.onmessage = function(evt){
+                try{
+                    const data = JSON.parse(evt.data);
+                    const alerts = document.getElementById('alerts');
+                    const card = document.createElement('div');
+                    card.style.background = 'linear-gradient(180deg,#2d1b1b,#3a2726)';
+                    card.style.color = '#fff';
+                    card.style.padding = '12px';
+                    card.style.marginBottom = '10px';
+                    card.style.borderRadius = '10px';
+                    card.style.boxShadow = '0 8px 28px rgba(0,0,0,0.4)';
+                    const label = data.is_fraud ? 'FRAUD' : 'TRANSACTION REVIEW';
+                    const icon = data.is_fraud ? '🚨' : '⚠️';
+                    const probability = Number(data.risk ?? 0);
+                    const probabilityLabel = `${(probability * 100).toFixed(2)}% probability`;
+                    card.innerHTML = `<strong>${icon} ${label}: ${data.id}</strong><div>Amount: $${Number(data.amount).toFixed(2)}</div><div>Risk: ${data.risk_level || 'UNKNOWN'} · ${probabilityLabel}</div><div>${data.message || 'Transaction assessed.'}</div>`;
+                    alerts.prepend(card);
+                }catch(e){console.error(e)}
+            };
+        }catch(e){console.warn('SSE unsupported', e)}
+    </script>
+</body>
+</html>
